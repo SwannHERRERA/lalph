@@ -8,6 +8,7 @@ import {
 } from "effect"
 import { ChildProcess } from "effect/unstable/process"
 import { claudeOutputTransformer } from "../CliAgent/claude.ts"
+import { piOutputTransformer } from "../CliAgent/pi.ts"
 
 export class CliAgent<const Id extends string> extends Data.Class<{
   id: Id
@@ -22,6 +23,7 @@ export class CliAgent<const Id extends string> extends Data.Class<{
     readonly prompt: string
     readonly prdFilePath: string | undefined
     readonly dangerous: boolean
+    readonly extraArgs: ReadonlyArray<string>
   }) => ChildProcess.Command
 }> {}
 
@@ -240,7 +242,47 @@ ${prompt}`
     })`echo ${"Plan mode is not supported for amp."}`,
 })
 
-export const allCliAgents = [clanka, opencode, claude, codex, amp] as const
+const pi = new CliAgent({
+  id: "pi",
+  name: "Pi",
+  command: ({ prompt, prdFilePath, extraArgs }) =>
+    ChildProcess.make(
+      "pi",
+      [
+        "--mode",
+        "json",
+        "--approve",
+        ...extraArgs,
+        ...(prdFilePath ? [`@${prdFilePath}`] : []),
+        escapeLeadingHyphen(prompt),
+      ],
+      {
+        extendEnv: true,
+        stdout: "pipe",
+        stderr: "inherit",
+        stdin: "ignore",
+      },
+    ),
+  outputTransformer: piOutputTransformer,
+  commandPlan: ({ prompt, prdFilePath, dangerous, extraArgs }) =>
+    ChildProcess.make(
+      "pi",
+      [
+        ...(dangerous ? ["--approve"] : []),
+        ...extraArgs,
+        ...(prdFilePath ? [`@${prdFilePath}`] : []),
+        escapeLeadingHyphen(prompt),
+      ],
+      {
+        extendEnv: true,
+        stdout: "inherit",
+        stderr: "inherit",
+        stdin: "inherit",
+      },
+    ),
+})
+
+export const allCliAgents = [clanka, opencode, claude, codex, amp, pi] as const
 export type AnyCliAgent = (typeof allCliAgents)[number]
 
 export const CliAgentFromId = Schema.Literals(
