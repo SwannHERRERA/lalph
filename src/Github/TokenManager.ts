@@ -21,7 +21,7 @@ import { Prompt } from "effect/unstable/cli"
 import { layerKvs } from "../Kvs.ts"
 import type { QuitError } from "effect/Terminal"
 
-const clientId = "Ov23liJMtg6leTI1Vu6m"
+const clientId = "Iv23liB1zkmVXmL2iy4f"
 
 export class TokenManager extends Context.Service<TokenManager>()(
   "lalph/Github/TokenManager",
